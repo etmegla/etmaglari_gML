@@ -4,7 +4,15 @@
       "Bash(.gmlenv/Scripts/pip show *)",
       "Bash(pip show *)",
       "Bash(python -c \"from topologicpy.Wire import Wire; print\\([m for m in dir\\(Wire\\) if not m.startswith\\('_'\\)]\\)\")",
-      "Bash(python -c \"from topologicpy.Wire import Wire; help\\(Wire.ByOffset\\)\")"
+      "Bash(python -c \"from topologicpy.Wire import Wire; help\\(Wire.ByOffset\\)\")",
+      "Bash(python -c \"from topologicpy.Face import Face; print\\([m for m in dir\\(Face\\) if 'offset' in m.lower\\(\\) or 'Offset' in m]\\)\")",
+      "Bash(python -c \"from topologicpy.Face import Face; help\\(Face.Rectangle\\)\")",
+      "Bash(python -c \"from topologicpy.Shell import Shell; help\\(Shell.Voronoi\\)\")",
+      "Bash(python -c \"from topologicpy.Face import Face; help\\(Face.Star\\)\")",
+      "Bash(python -c \"from topologicpy.Cell import Cell; help\\(Cell.Roof\\)\")",
+      "Bash(python -c \"from topologicpy.Face import Face; help\\(Face.Circle\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import topologicpy; import inspect, os; print\\(os.path.dirname\\(inspect.getfile\\(topologicpy\\)\\)\\)\")"
     ]
   }
 }
