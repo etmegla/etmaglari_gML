@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.gmlenv/Scripts/pip show *)",
+      "Bash(pip show *)"
+    ]
+  }
+}
