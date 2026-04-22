@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(.gmlenv/Scripts/pip show *)",
-      "Bash(pip show *)"
+      "Bash(pip show *)",
+      "Bash(python -c \"from topologicpy.Wire import Wire; print\\([m for m in dir\\(Wire\\) if not m.startswith\\('_'\\)]\\)\")",
+      "Bash(python -c \"from topologicpy.Wire import Wire; help\\(Wire.ByOffset\\)\")"
     ]
   }
 }
