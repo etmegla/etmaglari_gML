@@ -6,26 +6,6 @@ My house has two programmatic wings. The long horizontal bar to the left holds m
 
 ---
 
-## Room Colours
-
-| Room | Colour | Why |
-|---|---|---|
-| Entry / Foyer | `#E07B54` burnt orange | Warm and welcoming — the threshold between outside and inside |
-| Pantry | `#A8C96E` olive green | Earthy, food and storage association |
-| Storage | `#C9A96E` warm sand | Neutral utility space, low visual weight |
-| WC / MLO | `#7EC8C8` teal | Cool and clean, clinical without being cold |
-| Kitchen | `#F5C842` yellow | Energy and heat, activity associated with cooking |
-| Dining | `#F0A500` amber | Warm social light, adjacent to yellow Kitchen so they read as one zone |
-| Living Room | `#4A90D9` sky blue | The calm dominant public space — largest room, coolest colour to balance |
-| Bedroom 1 | `#7B68EE` medium purple | Private, restful, slightly cooler than living spaces |
-| Bedroom 2 | `#E85D75` rose | Distinct from Bedroom 1 but stays in the private warm-cool range |
-| Bedroom 3 | `#6DBE8C` mint green | Third private room, fresh and distinct from the other two |
-| Bath | `#89CFF0` baby blue | Water, clean, light — pairs naturally with the teal WC |
-| Family Room | `#E8845D` terracotta | Warm but distinct from Entry — semi-public, relaxed gathering space |
-| Closet | `#BCAAA4` warm grey | Purely functional, intentionally recedes visually |
-
----
-
 ## Image 1 — My Base Floor Plan
 
 [![Image 1](Homework02/Images/Image1.png)](Homework02/Images/Image1.png)
