@@ -12,7 +12,15 @@
       "Bash(python -c \"from topologicpy.Cell import Cell; help\\(Cell.Roof\\)\")",
       "Bash(python -c \"from topologicpy.Face import Face; help\\(Face.Circle\\)\")",
       "Bash(python -c ' *)",
-      "Bash(python -c \"import topologicpy; import inspect, os; print\\(os.path.dirname\\(inspect.getfile\\(topologicpy\\)\\)\\)\")"
+      "Bash(python -c \"import topologicpy; import inspect, os; print\\(os.path.dirname\\(inspect.getfile\\(topologicpy\\)\\)\\)\")",
+      "Bash(mkdir \"c:\\\\Users\\\\etmaglari\\\\IAAC\\\\etmaglari_gML\\\\Homework02\")",
+      "Bash(python -)",
+      "Bash(python make_hw02_notebooks.py)",
+      "Bash(del \"c:\\\\Users\\\\etmaglari\\\\IAAC\\\\etmaglari_gML\\\\make_hw02_notebooks.py\")",
+      "Bash(pip install *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\etmaglari\\IAAC\\etmaglari_gML"
     ]
   }
 }
