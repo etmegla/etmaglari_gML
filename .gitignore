@@ -211,3 +211,9 @@ __marimo__/
 # Jupyter Notebooks
 S0*.ipynb
 **/S0*.ipynb
+
+# Claude Code
+.claude/
+
+# S0 Classes
+S0 Classes/
