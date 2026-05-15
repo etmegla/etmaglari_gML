@@ -215,5 +215,8 @@ S0*.ipynb
 # Claude Code
 .claude/
 
+# Root README
+README.md
+
 # S0 Classes
 S0 Classes/
