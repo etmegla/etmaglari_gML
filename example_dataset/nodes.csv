@@ -1,0 +1,7 @@
+graph_id,node_id,label,train_mask,val_mask,test_mask,feat_area,feat_perimeter,feat_aspect_ratio,feat_compactness,feat_degree,feat_distance_to_entrance,feat_is_connected_to_entrance,X,Y,Z
+0,0,0,True,False,False,12.0,14.0,1.333333,0.061224,2.0,2.0,0.0,7.0,5.5,0.0
+0,1,0,True,False,False,18.0,18.0,2.0,0.055556,2.0,2.0,0.0,4.0,1.5,0.0
+0,2,0,True,False,False,6.0,10.0,1.5,0.06,2.0,2.0,0.0,8.0,1.5,0.0
+0,3,0,True,False,False,12.0,14.0,1.333333,0.061224,2.0,2.0,0.0,3.0,5.5,0.0
+0,4,1,False,True,False,1.0,4.0,1.0,0.0625,1.0,0.0,0.0,0.5,3.5,0.0
+0,5,1,False,False,True,8.0,18.0,8.0,0.024691,5.0,1.0,1.0,5.0,3.5,0.0
