@@ -1,0 +1,15 @@
+graph_id,src_id,dst_id,label,train_mask,val_mask,test_mask
+0,1,3,0,True,False,False
+0,3,1,0,True,False,False
+0,2,1,0,True,False,False
+0,1,2,0,True,False,False
+0,1,0,0,True,False,False
+0,0,1,0,True,False,False
+0,1,5,0,True,False,False
+0,5,1,0,True,False,False
+0,4,1,0,True,False,False
+0,1,4,0,True,False,False
+0,2,4,0,False,False,True
+0,4,2,0,False,False,True
+0,0,3,0,False,False,True
+0,3,0,0,False,False,True

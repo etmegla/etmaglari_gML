@@ -1,0 +1,7 @@
+graph_id,node_id,y_true,y_pred,y_pred_prob,train_mask,val_mask,test_mask
+0,0,0,0,1.0,True,False,False
+0,1,1,1,1.0,True,False,False
+0,2,0,0,1.0,True,False,False
+0,3,0,0,1.0,True,False,False
+0,4,0,0,0.6965811848640442,False,True,False
+0,5,1,0,0.8811019062995911,False,False,True
