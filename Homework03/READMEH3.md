@@ -1,40 +1,38 @@
 # Homework 03 — Building Graph Representation
 
-This homework is about turning a building model into a graph that a machine learning model can read and classify. The idea is to take a building designed in Rhino, break it down into spatial cells, and then describe the relationships between those cells as a network of nodes and edges. A pre-trained model then looks at that network and tells us how the building relates to the ground.
+I modelled a building in Rhino, converted it into a spatial graph, and used a pre-trained GNN to classify how it relates to the ground.
 
 ---
 
-## The Building
+## My Building
 
 <img src="./MyFloorPlan.png" alt="My Floor Plan" width="100%">
 
-The building was modelled in Rhino and exported as four separate OBJ files — one for each type of space: the ground slab, the columns, the office volumes, and the core. Each file becomes a separate input in the notebook.
+I exported four OBJ files from Rhino — ground slab, columns, office volumes, and core — one per space type. Each becomes a separate input in the notebook.
 
 ---
 
 ## Part 1 — Building the Graph (13A)
 
-The first notebook takes those four OBJ files and turns them into a topological graph.
-
 **Importing and tagging**
 
-Each OBJ is loaded with `Topology.ByOBJPath`. The faces are extracted and merged into a solid volume using `Topology.SelfMerge`, which finds all the cells inside. Each cell gets labelled — ground, column, office, or core — along with a colour for visualisation. That label is stored in a small dictionary attached to a point placed inside the cell (called a selector).
+I loaded each OBJ with `Topology.ByOBJPath`, merged the faces into solid volumes with `Topology.SelfMerge`, and tagged every cell with its type (ground, column, office, core) and a colour. Each label is stored in a dictionary attached to a selector point inside the cell.
 
 **Building the CellComplex**
 
 <img src="./CellComplex.png" alt="Cell Complex" width="100%">
 
-All the cells from all four components are merged together into one unified `CellComplex`. Where two spaces share a wall, that wall becomes an internal face. This is the core topological model — a solid representation where every space knows its neighbours.
+I merged all cells into one `CellComplex`. Where two spaces share a wall, that wall becomes an internal face — every cell now knows its neighbours.
 
 **Transferring the labels**
 
 <img src="./TransferDictionaries.png" alt="Transfer Dictionaries" width="100%">
 
-The labels from the selectors are transferred onto the cells of the merged model using `Topology.TransferDictionariesBySelectors`. After this step, every cell in the CellComplex knows what type it is.
+I transferred the selector dictionaries onto the merged cells using `Topology.TransferDictionariesBySelectors`, so every cell in the CellComplex carries its type label.
 
 **Making the graph**
 
-`Graph.ByTopology` converts the CellComplex into a graph. Each cell becomes a node, and each shared face between two cells becomes an edge. To give the model something to work with, each node gets a one-hot encoded feature vector based on its type:
+I ran `Graph.ByTopology` to convert the CellComplex into a graph — each cell is a node, each shared face is an edge. I one-hot encoded each node's type as features:
 
 ```
 ground  → [1, 0, 0, 0, 0]
@@ -43,50 +41,28 @@ office  → [0, 0, 0, 1, 0]
 core    → [0, 0, 0, 0, 1]
 ```
 
-These features are exported to CSV as `feature_00` through `feature_04`, along with the edges and a manually assigned graph label.
+I exported the result to CSV as `feature_00` through `feature_04`, ready for the model.
 
 ---
 
 ## Part 2 — Predicting the Label (13B)
 
-The second notebook loads that CSV data, feeds it to a pre-trained Graph Neural Network, and asks: what kind of building-ground relationship does this graph describe?
+I loaded the CSV into a PyTorch Geometric dataset, loaded the pre-trained `bgr_model.pt`, and ran `Predict()`. The model classifies each graph into one of five building-ground relationship types:
 
-**The five categories**
+- **Separation** — the building floats above the ground on pilotis, no direct contact with the earth
+- **Separation with Plinth** — same, but a solid base mediates between ground and the raised building
+- **Adherence** — floors sit flush on the ground, no intermediary
+- **Adherence with Plinth** — on the ground, but a podium extends and anchors the footprint
+- **Interlock** — the ground penetrates into the building; the boundary is deliberately blurred
 
-The model was trained on the Building–Ground Relationship dataset and recognises five types:
-
-- **Separation** — the building floats above the ground, typically on pilotis. No direct contact between the occupied floors and the earth.
-- **Separation with Plinth** — same idea, but a solid base element sits between the ground and the raised building. The building still lifts off, but the plinth anchors it visually and spatially.
-- **Adherence** — the building simply sits on the ground, floors flush with the earth, no intermediary.
-- **Adherence with Plinth** — sits on the ground but with a podium that extends the footprint and merges into the surrounding landscape.
-- **Interlock** — the ground wraps into the building or vice versa. The boundary between inside and outside at ground level is deliberately blurred — think sunken courtyards or carved ground floors.
-
-**Why Separation with Plinth is its own category**
-
-It might seem like a minor variation, but topologically it is quite different. In pure Separation, the only bridge between the ground cells and the office cells is the column nodes — the graph is sparse and linear. Add a plinth and you get an entirely new layer of cells sitting between the ground and the columns. That changes the connectivity pattern significantly: more edges, more neighbours, a denser subgraph around the base. The GNN picks up on that structural difference, not just the shape.
-
-**Reading the output**
-
-After running the prediction, the notebook shows a table comparing the label you assigned manually to the one the model predicted, along with a confidence score.
-
-If they match and confidence is high, the graph structure is cleanly encoding the spatial idea you had in mind. If they don't match, it's worth looking at the actual graph — sometimes the merge loses a connection, or a column doesn't end up adjacent to the ground the way you expected. If confidence is low even on a correct prediction, the building probably sits between two categories, which is itself a meaningful spatial observation.
+The output compares my manually assigned label against the model's prediction and shows a confidence score.
 
 ---
 
 ## Why My Building Was Classified as Separation with Plinth
 
-The graph assigned label 0 (Separation) manually, but the model predicted label 1 (Separation with Plinth). Here is why.
+I assigned label 0 (Separation), but the model predicted label 1 (Separation with Plinth).
 
-<img src="./TransferDictionaries.png" alt="Transfer Dictionaries" width="100%">
+Looking at my model, the green ground slab is thick, continuous, and spans the full footprint of both volumes — it sits below the columns, not around them. In the graph, the single ground node connects to all **27 column nodes**, which is a very dense connection for what I thought was a simple raised floor. That high-degree base node looks exactly like a plinth to the model. In a true pilotis building, you'd expect far fewer, widely spaced columns and a sparse ground connection.
 
-Looking at the coloured model above, the green layer at the bottom is the ground slab. It is thick, it runs across the full footprint of both building volumes, and it sits visibly below the column bases. This already reads spatially as a base — more like a plinth than bare earth.
-
-In the graph, this translates into the following structure:
-
-- There is **1 ground node** (node 38), positioned at Z = −2.25 — recessed below the building's finished floor level
-- There are **27 column nodes**, all sitting at Z = 1.5 — above the ground
-- All 27 columns connect directly to the ground node, and from there to the office and core cells above
-
-That means the ground node has **27 edges** going up to a dense intermediate layer of column cells, which then connect to the office volumes. To the model, this looks like a solid base element bridging ground and offices — exactly the topology of a plinth. In a pure Separation building (pilotis), you would expect far fewer columns spaced widely apart, giving the ground node low degree and sparse connectivity.
-
-The model is not wrong. The ground slab in your building is not a thin surface — it is a thick, continuous horizontal element spanning the entire footprint. The columns sit on top of it, not through it. The GNN reads that structural pattern and classifies it as Separation with Plinth because, topologically, that is what it is: a solid base mediating between the earth and the raised building above.
+The model read my ground slab as a plinth because, structurally, it behaves like one.
