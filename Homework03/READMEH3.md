@@ -70,3 +70,23 @@ It might seem like a minor variation, but topologically it is quite different. I
 After running the prediction, the notebook shows a table comparing the label you assigned manually to the one the model predicted, along with a confidence score.
 
 If they match and confidence is high, the graph structure is cleanly encoding the spatial idea you had in mind. If they don't match, it's worth looking at the actual graph — sometimes the merge loses a connection, or a column doesn't end up adjacent to the ground the way you expected. If confidence is low even on a correct prediction, the building probably sits between two categories, which is itself a meaningful spatial observation.
+
+---
+
+## Why My Building Was Classified as Separation with Plinth
+
+The graph assigned label 0 (Separation) manually, but the model predicted label 1 (Separation with Plinth). Here is why.
+
+<img src="./TransferDictionaries.png" alt="Transfer Dictionaries" width="100%">
+
+Looking at the coloured model above, the green layer at the bottom is the ground slab. It is thick, it runs across the full footprint of both building volumes, and it sits visibly below the column bases. This already reads spatially as a base — more like a plinth than bare earth.
+
+In the graph, this translates into the following structure:
+
+- There is **1 ground node** (node 38), positioned at Z = −2.25 — recessed below the building's finished floor level
+- There are **27 column nodes**, all sitting at Z = 1.5 — above the ground
+- All 27 columns connect directly to the ground node, and from there to the office and core cells above
+
+That means the ground node has **27 edges** going up to a dense intermediate layer of column cells, which then connect to the office volumes. To the model, this looks like a solid base element bridging ground and offices — exactly the topology of a plinth. In a pure Separation building (pilotis), you would expect far fewer columns spaced widely apart, giving the ground node low degree and sparse connectivity.
+
+The model is not wrong. The ground slab in your building is not a thin surface — it is a thick, continuous horizontal element spanning the entire footprint. The columns sit on top of it, not through it. The GNN reads that structural pattern and classifies it as Separation with Plinth because, topologically, that is what it is: a solid base mediating between the earth and the raised building above.
