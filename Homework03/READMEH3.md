@@ -1,127 +1,72 @@
-# Homework 03 — Building Graph Representation (BGR)
+# Homework 03 — Building Graph Representation
 
-## Overview
-
-This homework models a building in Rhino, exports it as geometry, converts it into a graph, and uses a pre-trained Graph Machine Learning model to classify the building's relationship to the ground.
+This homework is about turning a building model into a graph that a machine learning model can read and classify. The idea is to take a building designed in Rhino, break it down into spatial cells, and then describe the relationships between those cells as a network of nodes and edges. A pre-trained model then looks at that network and tells us how the building relates to the ground.
 
 ---
 
-## Floor Plan
+## The Building
 
 <img src="./MyFloorPlan.png" alt="My Floor Plan" width="100%">
 
-The starting point is a building designed in Rhino. Four layers are exported as separate OBJ files:
-
-| File | Layer Description |
-|------|-------------------|
-| `ground.obj` | Slab / podium |
-| `columns.obj` | Structural columns |
-| `offices.obj` | Office volumes |
-| `core.obj` | Core + corridors |
+The building was modelled in Rhino and exported as four separate OBJ files — one for each type of space: the ground slab, the columns, the office volumes, and the core. Each file becomes a separate input in the notebook.
 
 ---
 
-## 13A — Creating the Building Graph (BGR Graph)
+## Part 1 — Building the Graph (13A)
 
-### Step 1 — Import Geometry
+The first notebook takes those four OBJ files and turns them into a topological graph.
 
-Each OBJ file is loaded using `Topology.ByOBJPath`. This produces a list of topology objects per building component.
+**Importing and tagging**
 
-### Step 2 — Assign Cell Categories
+Each OBJ is loaded with `Topology.ByOBJPath`. The faces are extracted and merged into a solid volume using `Topology.SelfMerge`, which finds all the cells inside. Each cell gets labelled — ground, column, office, or core — along with a colour for visualisation. That label is stored in a small dictionary attached to a point placed inside the cell (called a selector).
 
-Faces from each component are flattened and merged into a `CellComplex` using `Topology.SelfMerge`. Each resulting cell is tagged with a dictionary containing:
-
-- `cell_type` — integer category (0=ground, 1=column, 3=office, 4=core)
-- `cell_name` — human-readable label
-- `cell_color` — display color for visualisation
-
-An internal vertex (selector) is placed inside each cell and carries this dictionary.
-
-### Step 3 — Build the CellComplex
+**Building the CellComplex**
 
 <img src="./CellComplex.png" alt="Cell Complex" width="100%">
 
-All cells from all components are merged into a single `CellComplex` using `Topology.SelfMerge`. This creates a topologically consistent solid model where shared walls between adjacent spaces become internal faces.
+All the cells from all four components are merged together into one unified `CellComplex`. Where two spaces share a wall, that wall becomes an internal face. This is the core topological model — a solid representation where every space knows its neighbours.
 
-### Step 4 — Transfer Dictionaries
+**Transferring the labels**
 
 <img src="./TransferDictionaries.png" alt="Transfer Dictionaries" width="100%">
 
-The category dictionaries stored on the selectors are transferred onto the cells of the merged model using `Topology.TransferDictionariesBySelectors`. This links each spatial cell to its label (ground, column, office, core) so the graph can carry semantic information.
+The labels from the selectors are transferred onto the cells of the merged model using `Topology.TransferDictionariesBySelectors`. After this step, every cell in the CellComplex knows what type it is.
 
-### Step 5 — Build the Adjacency Graph
+**Making the graph**
 
-`Graph.ByTopology(model)` converts the CellComplex into a graph where:
-
-- **Nodes** = cells (spaces)
-- **Edges** = shared faces (adjacency between spaces)
-
-Each node is given a **one-hot encoded feature vector** from its `cell_type`:
+`Graph.ByTopology` converts the CellComplex into a graph. Each cell becomes a node, and each shared face between two cells becomes an edge. To give the model something to work with, each node gets a one-hot encoded feature vector based on its type:
 
 ```
-cell_type 0 (ground)  → [1, 0, 0, 0, 0]
-cell_type 1 (column)  → [0, 1, 0, 0, 0]
-cell_type 3 (office)  → [0, 0, 0, 1, 0]
-cell_type 4 (core)    → [0, 0, 0, 0, 1]
+ground  → [1, 0, 0, 0, 0]
+column  → [0, 1, 0, 0, 0]
+office  → [0, 0, 0, 1, 0]
+core    → [0, 0, 0, 0, 1]
 ```
 
-Features are stored as `feature_00` … `feature_04` on each vertex dictionary.
-
-### Step 6 — Export to CSV
-
-`Graph.ExportToCSV` writes three files used for model input:
-
-| File | Contents |
-|------|----------|
-| `graphs.csv` | Graph-level label (manually assigned) |
-| `nodes.csv` | Node IDs, features, and labels |
-| `edges.csv` | Edge source/destination pairs |
+These features are exported to CSV as `feature_00` through `feature_04`, along with the edges and a manually assigned graph label.
 
 ---
 
-## 13B — Predicting the Graph Label
+## Part 2 — Predicting the Label (13B)
 
-### What the Model Does
+The second notebook loads that CSV data, feeds it to a pre-trained Graph Neural Network, and asks: what kind of building-ground relationship does this graph describe?
 
-A pre-trained **Graph Neural Network** (`bgr_model.pt`) was trained on the Building–Ground Relationship (BGR) dataset. It classifies a building graph into one of five categories based on how the building mass relates to the ground plane around it:
+**The five categories**
 
-| Label | Category | Description |
-|-------|----------|-------------|
-| 0 | Separation | The building sits above the ground with a clear gap — no direct contact between the occupied floor and the ground surface. Typical of piloti structures. |
-| 1 | Separation with Plinth | Same as Separation but a raised plinth or podium mediates the transition — the building still floats but a solid base element anchors it to the ground level visually and spatially. |
-| 2 | Adherence | The building sits directly on the ground with no intermediate element — floors meet the ground plane flush. |
-| 3 | Adherence with Plinth | The building sits on the ground but a plinth extends its footprint, giving it a broader base that blends into the surrounding landscape. |
-| 4 | Interlock | The ground plane penetrates or wraps into the building — the boundary between interior and exterior ground is ambiguous. Typical of sunken courtyards or carved ground floors. |
+The model was trained on the Building–Ground Relationship dataset and recognises five types:
 
-### Why "Separation with Plinth" is its Own Category
+- **Separation** — the building floats above the ground, typically on pilotis. No direct contact between the occupied floors and the earth.
+- **Separation with Plinth** — same idea, but a solid base element sits between the ground and the raised building. The building still lifts off, but the plinth anchors it visually and spatially.
+- **Adherence** — the building simply sits on the ground, floors flush with the earth, no intermediary.
+- **Adherence with Plinth** — sits on the ground but with a podium that extends the footprint and merges into the surrounding landscape.
+- **Interlock** — the ground wraps into the building or vice versa. The boundary between inside and outside at ground level is deliberately blurred — think sunken courtyards or carved ground floors.
 
-**Separation with Plinth** (label 1) is distinct from pure Separation (label 0) because the plinth changes the topological structure of the graph. In Separation, the column nodes are the only elements bridging the ground and office layers — the graph has a sparse, linear connectivity. When a plinth is added, a new layer of cells (the podium volume) appears between the ground and the columns. This creates denser adjacency edges in the graph and a richer feature distribution. The GNN detects this structural difference in the node connectivity pattern, not just in the geometry shape.
+**Why Separation with Plinth is its own category**
 
----
+It might seem like a minor variation, but topologically it is quite different. In pure Separation, the only bridge between the ground cells and the office cells is the column nodes — the graph is sparse and linear. Add a plinth and you get an entirely new layer of cells sitting between the ground and the columns. That changes the connectivity pattern significantly: more edges, more neighbours, a denser subgraph around the base. The GNN picks up on that structural difference, not just the shape.
 
-### Pipeline
+**Reading the output**
 
-1. **Load dataset** — `PyG.ByCSVPath` reads the three CSV files into a PyTorch Geometric dataset
-2. **Load model** — `pyg.LoadModel` loads the pre-trained weights from `bgr_model.pt`
-3. **Set split** — The entire dataset is set as the test set (`split=(0.0, 0.0, 1.0)`)
-4. **Predict** — `pyg.Predict()` runs inference and returns predicted labels, actual labels, and confidence scores
+After running the prediction, the notebook shows a table comparing the label you assigned manually to the one the model predicted, along with a confidence score.
 
-### Output
-
-The output is a DataFrame with one row per graph (building):
-
-| Column | Meaning |
-|--------|---------|
-| `Actual Value` | Integer label you manually assigned in `graphs.csv` (your assessment) |
-| `Predicted Value` | Integer label the GNN assigned based on the graph structure |
-| `Actual Label` | Human-readable name for your label |
-| `Predicted Label` | Human-readable name for the model's prediction |
-| `Confidence` | Probability the model assigned to its top prediction (0–1). A value close to 1.0 means the model is certain; a value around 0.2–0.4 means the graph sits ambiguously between categories. |
-
-#### How to read the result
-
-- **Match** (`Actual Label == Predicted Label`) — the model's learned graph patterns align with your spatial reading. This validates that the graph structure encodes the building-ground relationship correctly.
-- **Mismatch** — the model sees a different structural pattern than you intended. This is worth investigating: check whether the adjacency graph has the topology you expect (e.g. are columns actually connecting ground to offices, or did the merge lose that connection?).
-- **Low confidence on a correct prediction** — the building is topologically ambiguous, sitting between two categories. Consider whether the design intent is clearly expressed in the geometry.
-
-The goal is to see whether the pre-trained model agrees with the designer's own assessment of how the building relates to the ground.
+If they match and confidence is high, the graph structure is cleanly encoding the spatial idea you had in mind. If they don't match, it's worth looking at the actual graph — sometimes the merge loses a connection, or a column doesn't end up adjacent to the ground the way you expected. If confidence is low even on a correct prediction, the building probably sits between two categories, which is itself a meaningful spatial observation.
