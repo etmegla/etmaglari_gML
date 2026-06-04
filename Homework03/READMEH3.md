@@ -83,15 +83,21 @@ Features are stored as `feature_00` … `feature_04` on each vertex dictionary.
 
 ### What the Model Does
 
-A pre-trained **Graph Neural Network** (`bgr_model.pt`) was trained on the Building–Ground Relationship (BGR) dataset. It classifies a building graph into one of five categories:
+A pre-trained **Graph Neural Network** (`bgr_model.pt`) was trained on the Building–Ground Relationship (BGR) dataset. It classifies a building graph into one of five categories based on how the building mass relates to the ground plane around it:
 
-| Label | Category |
-|-------|----------|
-| 0 | Separation |
-| 1 | Separation with Plinth |
-| 2 | Adherence |
-| 3 | Adherence with Plinth |
-| 4 | Interlock |
+| Label | Category | Description |
+|-------|----------|-------------|
+| 0 | Separation | The building sits above the ground with a clear gap — no direct contact between the occupied floor and the ground surface. Typical of piloti structures. |
+| 1 | Separation with Plinth | Same as Separation but a raised plinth or podium mediates the transition — the building still floats but a solid base element anchors it to the ground level visually and spatially. |
+| 2 | Adherence | The building sits directly on the ground with no intermediate element — floors meet the ground plane flush. |
+| 3 | Adherence with Plinth | The building sits on the ground but a plinth extends its footprint, giving it a broader base that blends into the surrounding landscape. |
+| 4 | Interlock | The ground plane penetrates or wraps into the building — the boundary between interior and exterior ground is ambiguous. Typical of sunken courtyards or carved ground floors. |
+
+### Why "Separation with Plinth" is its Own Category
+
+**Separation with Plinth** (label 1) is distinct from pure Separation (label 0) because the plinth changes the topological structure of the graph. In Separation, the column nodes are the only elements bridging the ground and office layers — the graph has a sparse, linear connectivity. When a plinth is added, a new layer of cells (the podium volume) appears between the ground and the columns. This creates denser adjacency edges in the graph and a richer feature distribution. The GNN detects this structural difference in the node connectivity pattern, not just in the geometry shape.
+
+---
 
 ### Pipeline
 
@@ -102,10 +108,20 @@ A pre-trained **Graph Neural Network** (`bgr_model.pt`) was trained on the Build
 
 ### Output
 
-The result is a DataFrame comparing:
+The output is a DataFrame with one row per graph (building):
 
-- The **actual label** (manually assigned in `graphs.csv`)
-- The **predicted label** (output from the GNN)
-- The **confidence** (maximum probability across all five classes)
+| Column | Meaning |
+|--------|---------|
+| `Actual Value` | Integer label you manually assigned in `graphs.csv` (your assessment) |
+| `Predicted Value` | Integer label the GNN assigned based on the graph structure |
+| `Actual Label` | Human-readable name for your label |
+| `Predicted Label` | Human-readable name for the model's prediction |
+| `Confidence` | Probability the model assigned to its top prediction (0–1). A value close to 1.0 means the model is certain; a value around 0.2–0.4 means the graph sits ambiguously between categories. |
+
+#### How to read the result
+
+- **Match** (`Actual Label == Predicted Label`) — the model's learned graph patterns align with your spatial reading. This validates that the graph structure encodes the building-ground relationship correctly.
+- **Mismatch** — the model sees a different structural pattern than you intended. This is worth investigating: check whether the adjacency graph has the topology you expect (e.g. are columns actually connecting ground to offices, or did the merge lose that connection?).
+- **Low confidence on a correct prediction** — the building is topologically ambiguous, sitting between two categories. Consider whether the design intent is clearly expressed in the geometry.
 
 The goal is to see whether the pre-trained model agrees with the designer's own assessment of how the building relates to the ground.
