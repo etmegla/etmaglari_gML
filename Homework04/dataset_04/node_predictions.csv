@@ -9,7 +9,7 @@ graph_id,node_id,y_true,y_pred,y_pred_prob,true_name,pred_name
 0,7,0,0,1.0,bedroom,bedroom
 0,8,7,7,0.5031672716140747,bathroom,bathroom
 0,9,5,5,0.9974913597106934,stairs,stairs
-0,10,4,2,0.6253194808959961,corridor,kitchen
+0,10,4,2,0.6253197193145752,corridor,kitchen
 0,11,0,0,1.0,bedroom,bedroom
 0,12,7,7,0.5031672716140747,bathroom,bathroom
 0,13,7,7,0.8490229249000549,bathroom,bathroom
