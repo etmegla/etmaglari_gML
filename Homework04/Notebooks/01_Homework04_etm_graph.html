@@ -1,0 +1,1311 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/css/tom-select.min.css" integrity="sha512-43fHB3GLgZfz8QXl1RPQ8O66oIgv3po9cJ5erMt1c4QISq9dYb195T3vr5ImnJPXuVroKcGBPXBFKETW8jrPNQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/js/tom-select.complete.js" integrity="sha512-jeF9CfnvzDiw9G9xiksVjxR2lib44Gnovvkv+3CgCG6NXCD4gqlA5nDAVW5WjpA+i+/zKsUWV5xNEbW1X/HH0Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 900px;
+                 background-color: white;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 100%;
+                 height: 900px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+             #config {
+                 float: left;
+                 width: 400px;
+                 height: 600px;
+             }
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+                <div id="select-menu" class="card-header">
+                    <div class="row no-gutters">
+                        <div class="col-10 pb-2">
+                            <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="selectNode([value]);"
+                            id="select-node"
+                            placeholder="Select node..."
+                            >
+                                <option selected>Select a Node by ID</option>
+                                
+                                    <option value="0">0</option>
+                                
+                                    <option value="1">1</option>
+                                
+                                    <option value="2">2</option>
+                                
+                                    <option value="3">3</option>
+                                
+                                    <option value="4">4</option>
+                                
+                                    <option value="5">5</option>
+                                
+                                    <option value="6">6</option>
+                                
+                                    <option value="7">7</option>
+                                
+                                    <option value="8">8</option>
+                                
+                                    <option value="9">9</option>
+                                
+                                    <option value="10">10</option>
+                                
+                                    <option value="11">11</option>
+                                
+                                    <option value="12">12</option>
+                                
+                                    <option value="13">13</option>
+                                
+                                    <option value="14">14</option>
+                                
+                                    <option value="15">15</option>
+                                
+                                    <option value="16">16</option>
+                                
+                                    <option value="17">17</option>
+                                
+                                    <option value="18">18</option>
+                                
+                                    <option value="19">19</option>
+                                
+                                    <option value="20">20</option>
+                                
+                                    <option value="21">21</option>
+                                
+                                    <option value="22">22</option>
+                                
+                                    <option value="23">23</option>
+                                
+                                    <option value="24">24</option>
+                                
+                                    <option value="25">25</option>
+                                
+                                    <option value="26">26</option>
+                                
+                                    <option value="27">27</option>
+                                
+                                    <option value="28">28</option>
+                                
+                                    <option value="29">29</option>
+                                
+                                    <option value="30">30</option>
+                                
+                                    <option value="31">31</option>
+                                
+                                    <option value="32">32</option>
+                                
+                                    <option value="33">33</option>
+                                
+                                    <option value="34">34</option>
+                                
+                                    <option value="35">35</option>
+                                
+                                    <option value="36">36</option>
+                                
+                                    <option value="37">37</option>
+                                
+                                    <option value="38">38</option>
+                                
+                                    <option value="39">39</option>
+                                
+                                    <option value="40">40</option>
+                                
+                                    <option value="41">41</option>
+                                
+                                    <option value="42">42</option>
+                                
+                                    <option value="43">43</option>
+                                
+                                    <option value="44">44</option>
+                                
+                                    <option value="45">45</option>
+                                
+                                    <option value="46">46</option>
+                                
+                                    <option value="47">47</option>
+                                
+                                    <option value="48">48</option>
+                                
+                                    <option value="49">49</option>
+                                
+                                    <option value="50">50</option>
+                                
+                                    <option value="51">51</option>
+                                
+                                    <option value="52">52</option>
+                                
+                                    <option value="53">53</option>
+                                
+                                    <option value="54">54</option>
+                                
+                                    <option value="55">55</option>
+                                
+                                    <option value="56">56</option>
+                                
+                                    <option value="57">57</option>
+                                
+                                    <option value="58">58</option>
+                                
+                                    <option value="59">59</option>
+                                
+                                    <option value="60">60</option>
+                                
+                                    <option value="61">61</option>
+                                
+                                    <option value="62">62</option>
+                                
+                                    <option value="63">63</option>
+                                
+                                    <option value="64">64</option>
+                                
+                                    <option value="65">65</option>
+                                
+                                    <option value="66">66</option>
+                                
+                                    <option value="67">67</option>
+                                
+                                    <option value="68">68</option>
+                                
+                                    <option value="69">69</option>
+                                
+                                    <option value="70">70</option>
+                                
+                                    <option value="71">71</option>
+                                
+                                    <option value="72">72</option>
+                                
+                                    <option value="73">73</option>
+                                
+                                    <option value="74">74</option>
+                                
+                                    <option value="75">75</option>
+                                
+                                    <option value="76">76</option>
+                                
+                                    <option value="77">77</option>
+                                
+                                    <option value="78">78</option>
+                                
+                                    <option value="79">79</option>
+                                
+                                    <option value="80">80</option>
+                                
+                                    <option value="81">81</option>
+                                
+                                    <option value="82">82</option>
+                                
+                                    <option value="83">83</option>
+                                
+                                    <option value="84">84</option>
+                                
+                                    <option value="85">85</option>
+                                
+                                    <option value="86">86</option>
+                                
+                                    <option value="87">87</option>
+                                
+                                    <option value="88">88</option>
+                                
+                                    <option value="89">89</option>
+                                
+                                    <option value="90">90</option>
+                                
+                                    <option value="91">91</option>
+                                
+                                    <option value="92">92</option>
+                                
+                                    <option value="93">93</option>
+                                
+                                    <option value="94">94</option>
+                                
+                                    <option value="95">95</option>
+                                
+                                    <option value="96">96</option>
+                                
+                                    <option value="97">97</option>
+                                
+                                    <option value="98">98</option>
+                                
+                                    <option value="99">99</option>
+                                
+                                    <option value="100">100</option>
+                                
+                                    <option value="101">101</option>
+                                
+                                    <option value="102">102</option>
+                                
+                                    <option value="103">103</option>
+                                
+                                    <option value="104">104</option>
+                                
+                                    <option value="105">105</option>
+                                
+                                    <option value="106">106</option>
+                                
+                                    <option value="107">107</option>
+                                
+                                    <option value="108">108</option>
+                                
+                                    <option value="109">109</option>
+                                
+                                    <option value="110">110</option>
+                                
+                                    <option value="111">111</option>
+                                
+                                    <option value="112">112</option>
+                                
+                                    <option value="113">113</option>
+                                
+                                    <option value="114">114</option>
+                                
+                                    <option value="115">115</option>
+                                
+                                    <option value="116">116</option>
+                                
+                                    <option value="117">117</option>
+                                
+                                    <option value="118">118</option>
+                                
+                                    <option value="119">119</option>
+                                
+                                    <option value="120">120</option>
+                                
+                                    <option value="121">121</option>
+                                
+                                    <option value="122">122</option>
+                                
+                                    <option value="123">123</option>
+                                
+                                    <option value="124">124</option>
+                                
+                                    <option value="125">125</option>
+                                
+                                    <option value="126">126</option>
+                                
+                                    <option value="127">127</option>
+                                
+                                    <option value="128">128</option>
+                                
+                                    <option value="129">129</option>
+                                
+                                    <option value="130">130</option>
+                                
+                                    <option value="131">131</option>
+                                
+                                    <option value="132">132</option>
+                                
+                                    <option value="133">133</option>
+                                
+                                    <option value="134">134</option>
+                                
+                                    <option value="135">135</option>
+                                
+                                    <option value="136">136</option>
+                                
+                                    <option value="137">137</option>
+                                
+                                    <option value="138">138</option>
+                                
+                                    <option value="139">139</option>
+                                
+                                    <option value="140">140</option>
+                                
+                                    <option value="141">141</option>
+                                
+                                    <option value="142">142</option>
+                                
+                                    <option value="143">143</option>
+                                
+                                    <option value="144">144</option>
+                                
+                                    <option value="145">145</option>
+                                
+                                    <option value="146">146</option>
+                                
+                                    <option value="147">147</option>
+                                
+                                    <option value="148">148</option>
+                                
+                                    <option value="149">149</option>
+                                
+                                    <option value="150">150</option>
+                                
+                                    <option value="151">151</option>
+                                
+                                    <option value="152">152</option>
+                                
+                                    <option value="153">153</option>
+                                
+                                    <option value="154">154</option>
+                                
+                                    <option value="155">155</option>
+                                
+                                    <option value="156">156</option>
+                                
+                                    <option value="157">157</option>
+                                
+                                    <option value="158">158</option>
+                                
+                                    <option value="159">159</option>
+                                
+                                    <option value="160">160</option>
+                                
+                                    <option value="161">161</option>
+                                
+                                    <option value="162">162</option>
+                                
+                                    <option value="163">163</option>
+                                
+                                    <option value="164">164</option>
+                                
+                                    <option value="165">165</option>
+                                
+                                    <option value="166">166</option>
+                                
+                                    <option value="167">167</option>
+                                
+                                    <option value="168">168</option>
+                                
+                                    <option value="169">169</option>
+                                
+                                    <option value="170">170</option>
+                                
+                                    <option value="171">171</option>
+                                
+                                    <option value="172">172</option>
+                                
+                                    <option value="173">173</option>
+                                
+                                    <option value="174">174</option>
+                                
+                                    <option value="175">175</option>
+                                
+                                    <option value="176">176</option>
+                                
+                                    <option value="177">177</option>
+                                
+                                    <option value="178">178</option>
+                                
+                                    <option value="179">179</option>
+                                
+                                    <option value="180">180</option>
+                                
+                                    <option value="181">181</option>
+                                
+                                    <option value="182">182</option>
+                                
+                                    <option value="183">183</option>
+                                
+                                    <option value="184">184</option>
+                                
+                                    <option value="185">185</option>
+                                
+                                    <option value="186">186</option>
+                                
+                                    <option value="187">187</option>
+                                
+                                    <option value="188">188</option>
+                                
+                                    <option value="189">189</option>
+                                
+                                    <option value="190">190</option>
+                                
+                                    <option value="191">191</option>
+                                
+                                    <option value="192">192</option>
+                                
+                                    <option value="193">193</option>
+                                
+                                    <option value="194">194</option>
+                                
+                                    <option value="195">195</option>
+                                
+                                    <option value="196">196</option>
+                                
+                                    <option value="197">197</option>
+                                
+                                    <option value="198">198</option>
+                                
+                                    <option value="199">199</option>
+                                
+                                    <option value="200">200</option>
+                                
+                                    <option value="201">201</option>
+                                
+                                    <option value="202">202</option>
+                                
+                                    <option value="203">203</option>
+                                
+                                    <option value="204">204</option>
+                                
+                                    <option value="205">205</option>
+                                
+                                    <option value="206">206</option>
+                                
+                                    <option value="207">207</option>
+                                
+                                    <option value="208">208</option>
+                                
+                                    <option value="209">209</option>
+                                
+                                    <option value="210">210</option>
+                                
+                                    <option value="211">211</option>
+                                
+                                    <option value="212">212</option>
+                                
+                                    <option value="213">213</option>
+                                
+                                    <option value="214">214</option>
+                                
+                                    <option value="215">215</option>
+                                
+                                    <option value="216">216</option>
+                                
+                                    <option value="217">217</option>
+                                
+                                    <option value="218">218</option>
+                                
+                                    <option value="219">219</option>
+                                
+                                    <option value="220">220</option>
+                                
+                                    <option value="221">221</option>
+                                
+                                    <option value="222">222</option>
+                                
+                                    <option value="223">223</option>
+                                
+                                    <option value="224">224</option>
+                                
+                                    <option value="225">225</option>
+                                
+                                    <option value="226">226</option>
+                                
+                                    <option value="227">227</option>
+                                
+                                    <option value="228">228</option>
+                                
+                                    <option value="229">229</option>
+                                
+                                    <option value="230">230</option>
+                                
+                                    <option value="231">231</option>
+                                
+                                    <option value="232">232</option>
+                                
+                                    <option value="233">233</option>
+                                
+                                    <option value="234">234</option>
+                                
+                                    <option value="235">235</option>
+                                
+                                    <option value="236">236</option>
+                                
+                                    <option value="237">237</option>
+                                
+                                    <option value="238">238</option>
+                                
+                                    <option value="239">239</option>
+                                
+                                    <option value="240">240</option>
+                                
+                                    <option value="241">241</option>
+                                
+                                    <option value="242">242</option>
+                                
+                                    <option value="243">243</option>
+                                
+                                    <option value="244">244</option>
+                                
+                                    <option value="245">245</option>
+                                
+                                    <option value="246">246</option>
+                                
+                                    <option value="247">247</option>
+                                
+                                    <option value="248">248</option>
+                                
+                                    <option value="249">249</option>
+                                
+                                    <option value="250">250</option>
+                                
+                                    <option value="251">251</option>
+                                
+                                    <option value="252">252</option>
+                                
+                                    <option value="253">253</option>
+                                
+                                    <option value="254">254</option>
+                                
+                                    <option value="255">255</option>
+                                
+                                    <option value="256">256</option>
+                                
+                                    <option value="257">257</option>
+                                
+                                    <option value="258">258</option>
+                                
+                                    <option value="259">259</option>
+                                
+                                    <option value="260">260</option>
+                                
+                                    <option value="261">261</option>
+                                
+                                    <option value="262">262</option>
+                                
+                                    <option value="263">263</option>
+                                
+                                    <option value="264">264</option>
+                                
+                                    <option value="265">265</option>
+                                
+                                    <option value="266">266</option>
+                                
+                                    <option value="267">267</option>
+                                
+                                    <option value="268">268</option>
+                                
+                                    <option value="269">269</option>
+                                
+                                    <option value="270">270</option>
+                                
+                                    <option value="271">271</option>
+                                
+                                    <option value="272">272</option>
+                                
+                                    <option value="273">273</option>
+                                
+                                    <option value="274">274</option>
+                                
+                                    <option value="275">275</option>
+                                
+                                    <option value="276">276</option>
+                                
+                                    <option value="277">277</option>
+                                
+                                    <option value="278">278</option>
+                                
+                                    <option value="279">279</option>
+                                
+                                    <option value="280">280</option>
+                                
+                                    <option value="281">281</option>
+                                
+                                    <option value="282">282</option>
+                                
+                                    <option value="283">283</option>
+                                
+                                    <option value="284">284</option>
+                                
+                                    <option value="285">285</option>
+                                
+                                    <option value="286">286</option>
+                                
+                                    <option value="287">287</option>
+                                
+                                    <option value="288">288</option>
+                                
+                                    <option value="289">289</option>
+                                
+                                    <option value="290">290</option>
+                                
+                                    <option value="291">291</option>
+                                
+                                    <option value="292">292</option>
+                                
+                                    <option value="293">293</option>
+                                
+                                    <option value="294">294</option>
+                                
+                                    <option value="295">295</option>
+                                
+                                    <option value="296">296</option>
+                                
+                                    <option value="297">297</option>
+                                
+                                    <option value="298">298</option>
+                                
+                                    <option value="299">299</option>
+                                
+                                    <option value="300">300</option>
+                                
+                                    <option value="301">301</option>
+                                
+                                    <option value="302">302</option>
+                                
+                                    <option value="303">303</option>
+                                
+                                    <option value="304">304</option>
+                                
+                                    <option value="305">305</option>
+                                
+                                    <option value="306">306</option>
+                                
+                                    <option value="307">307</option>
+                                
+                                    <option value="308">308</option>
+                                
+                                    <option value="309">309</option>
+                                
+                                    <option value="310">310</option>
+                                
+                                    <option value="311">311</option>
+                                
+                                    <option value="312">312</option>
+                                
+                                    <option value="313">313</option>
+                                
+                                    <option value="314">314</option>
+                                
+                                    <option value="315">315</option>
+                                
+                                    <option value="316">316</option>
+                                
+                                    <option value="317">317</option>
+                                
+                                    <option value="318">318</option>
+                                
+                                    <option value="319">319</option>
+                                
+                                    <option value="320">320</option>
+                                
+                                    <option value="321">321</option>
+                                
+                                    <option value="322">322</option>
+                                
+                                    <option value="323">323</option>
+                                
+                                    <option value="324">324</option>
+                                
+                                    <option value="325">325</option>
+                                
+                                    <option value="326">326</option>
+                                
+                            </select>
+                        </div>
+                        <div class="col-2 pb-2">
+                            <button type="button" class="btn btn-primary btn-block" onclick="neighbourhoodHighlight({nodes: []});">Reset Selection</button>
+                        </div>
+                    </div>
+                </div>
+            
+            
+              <div id="filter-menu" class="card-header">
+                <div class="row no-gutters">
+                  <div class="col-3 pb-2">
+                    <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="updateFilter(value, 'item')"
+                            id="select-item"
+                        >
+                        <option value="">Select a network item</option>
+                        <option value="edge">edge</option>
+                        <option value="node">node</option>
+                    </select>
+                  </div>
+                  <div class="col-3 pb-2">
+                    <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="updateFilter(value, 'property')"
+                            id="select-property"
+                        >
+                        <option value="">Select a property...</option>
+                    </select>
+                  </div>
+                  <div class="col-3 pb-2">
+                    <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            id="select-value"
+                        >
+                        <option value="">Select value(s)...</option>
+                    </select>
+                  </div>
+                  <div class="col-1 pb-2">
+                    <button type="button" class="btn btn-primary btn-block" onclick="highlightFilter(filter);">Filter</button>
+                  </div>
+                  <div class="col-2 pb-2">
+                    <button type="button" class="btn btn-primary btn-block" onclick="clearFilter(true)">Reset Selection</button>
+                  </div>
+                </div>
+              </div>
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+            <div id="loadingBar">
+              <div class="outerBorder">
+                <div id="text">0%</div>
+                <div id="border">
+                  <div id="bar"></div>
+                </div>
+              </div>
+            </div>
+        
+        
+            <div id="config"></div>
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+                  new TomSelect("#select-node",{
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      }
+                  });
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#26828E", "font": {"color": "black"}, "id": 0, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "0: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 1, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "1: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 2, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "2: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 3, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "3: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 4, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "4: IfcBuildingElementProxy\nNeighbors:\n324: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 5, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "5: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 6, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "6: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 7, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "7: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 8, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "8: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 9, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "9: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 10, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "10: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 11, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "11: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 12, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "12: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 13, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "13: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 14, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "14: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 15, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "15: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 16, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "16: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 17, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "17: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 18, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "18: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 19, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "19: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 20, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "20: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 21, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "21: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 22, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "22: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 23, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "23: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 24, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "24: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 25, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "25: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 26, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "26: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 27, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "27: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 28, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "28: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 29, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "29: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 30, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "30: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 31, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "31: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 32, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "32: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 33, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "33: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 34, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "34: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 35, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "35: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 36, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "36: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 37, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "37: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 38, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "38: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 39, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "39: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 40, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "40: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 41, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "41: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 42, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "42: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 43, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "43: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 44, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "44: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 45, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "45: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 46, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "46: IfcBuildingElementProxy\nNeighbors:\n324: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 47, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "47: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 48, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "48: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 49, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "49: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 50, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "50: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 51, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "51: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 52, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "52: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 53, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "53: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 54, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "54: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 55, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "55: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 56, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "56: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 57, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "57: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 58, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "58: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 59, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "59: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 60, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "60: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 61, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "61: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 62, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "62: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 63, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "63: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 64, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "64: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 65, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "65: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 66, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "66: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 67, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "67: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 68, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "68: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 69, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "69: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 70, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "70: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 71, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "71: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 72, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "72: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 73, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "73: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 74, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "74: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 75, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "75: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 76, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "76: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 77, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "77: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 78, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "78: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 79, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "79: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 80, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "80: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 81, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "81: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 82, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "82: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 83, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "83: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 84, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "84: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 85, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "85: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 86, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "86: IfcBuildingElementProxy\nNeighbors:\n324: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 87, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "87: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 88, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "88: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 89, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "89: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 90, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "90: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 91, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "91: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 92, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "92: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 93, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "93: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 94, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "94: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 95, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "95: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 96, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "96: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 97, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "97: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 98, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "98: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 99, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "99: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 100, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "100: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 101, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "101: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 102, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "102: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 103, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "103: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 104, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "104: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 105, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "105: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 106, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "106: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 107, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "107: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 108, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "108: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 109, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "109: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 110, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "110: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 111, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "111: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 112, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "112: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 113, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "113: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 114, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "114: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 115, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "115: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 116, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "116: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 117, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "117: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 118, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "118: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 119, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "119: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 120, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "120: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 121, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "121: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 122, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "122: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 123, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "123: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 124, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "124: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 125, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "125: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 126, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "126: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 127, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "127: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 128, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "128: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 129, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "129: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 130, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "130: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 131, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "131: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 132, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "132: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 133, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "133: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 134, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "134: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 135, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "135: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 136, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "136: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 137, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "137: IfcBuildingElementProxy\nNeighbors:\n324: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 138, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "138: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 139, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "139: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 140, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "140: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 141, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "141: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 142, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "142: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 143, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "143: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 144, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "144: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 145, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "145: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 146, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "146: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 147, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "147: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 148, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "148: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 149, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "149: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 150, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "150: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 151, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "151: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 152, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "152: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 153, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "153: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 154, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "154: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 155, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "155: IfcBuildingElementProxy\nNeighbors:\n324: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 156, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "156: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 157, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "157: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 158, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "158: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 159, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "159: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 160, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "160: IfcBuildingElementProxy\nNeighbors:\n324: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 161, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "161: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 162, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "162: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 163, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "163: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 164, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "164: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 165, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "165: IfcBuildingElementProxy\nNeighbors:\n324: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 166, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "166: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 167, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "167: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 168, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "168: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 169, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "169: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 170, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "170: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 171, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "171: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 172, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "172: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 173, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "173: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 174, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "174: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 175, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "175: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 176, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "176: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 177, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "177: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 178, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "178: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 179, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "179: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 180, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "180: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 181, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "181: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 182, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "182: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 183, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "183: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 184, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "184: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 185, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "185: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 186, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "186: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 187, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "187: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 188, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "188: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 189, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "189: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 190, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "190: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 191, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "191: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 192, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "192: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 193, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "193: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 194, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "194: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 195, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "195: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 196, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "196: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 197, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "197: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 198, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "198: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 199, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "199: IfcBuildingElementProxy\nNeighbors:\n324: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 200, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "200: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 201, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "201: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 202, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "202: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 203, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "203: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 204, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "204: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 205, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "205: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 206, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "206: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 207, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "207: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 208, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "208: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 209, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "209: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 210, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "210: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 211, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "211: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 212, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "212: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 213, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "213: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 214, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "214: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 215, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "215: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 216, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "216: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 217, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "217: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 218, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "218: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 219, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "219: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 220, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "220: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 221, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "221: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 222, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "222: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 223, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "223: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 224, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "224: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 225, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "225: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 226, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "226: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 227, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "227: IfcBuildingElementProxy\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 228, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "228: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 229, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "229: IfcBuildingElementProxy\nNeighbors:\n324: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 230, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "230: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 231, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "231: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 232, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "232: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 233, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "233: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 234, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "234: IfcBuildingElementProxy\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 235, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "235: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 236, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "236: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 237, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "237: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 238, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "238: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 239, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "239: IfcBuildingElementProxy\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#26828E", "font": {"color": "black"}, "id": 240, "label": "IfcBuildingElementProxy", "shape": "dot", "title": "240: IfcBuildingElementProxy\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#B4DE2C", "font": {"color": "black"}, "id": 241, "label": "IfcSlab", "shape": "dot", "title": "241: IfcSlab\nNeighbors:\n321: IfcBuildingStorey\n286: IfcOpeningElement", "value": 10}, {"color": "#B4DE2C", "font": {"color": "black"}, "id": 242, "label": "IfcSlab", "shape": "dot", "title": "242: IfcSlab\nNeighbors:\n322: IfcBuildingStorey\n287: IfcOpeningElement", "value": 10}, {"color": "#B4DE2C", "font": {"color": "black"}, "id": 243, "label": "IfcSlab", "shape": "dot", "title": "243: IfcSlab\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#B4DE2C", "font": {"color": "black"}, "id": 244, "label": "IfcSlab", "shape": "dot", "title": "244: IfcSlab\nNeighbors:\n324: IfcBuildingStorey", "value": 10}, {"color": "#B4DE2C", "font": {"color": "black"}, "id": 245, "label": "IfcSlab", "shape": "dot", "title": "245: IfcSlab\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 246, "label": "IfcWall", "shape": "dot", "title": "246: IfcWall\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 247, "label": "IfcWall", "shape": "dot", "title": "247: IfcWall\nNeighbors:\n320: IfcBuildingStorey\n289: IfcOpeningElement\n288: IfcOpeningElement", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 248, "label": "IfcWall", "shape": "dot", "title": "248: IfcWall\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 249, "label": "IfcWall", "shape": "dot", "title": "249: IfcWall\nNeighbors:\n320: IfcBuildingStorey\n290: IfcOpeningElement\n291: IfcOpeningElement", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 250, "label": "IfcWall", "shape": "dot", "title": "250: IfcWall\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 251, "label": "IfcWall", "shape": "dot", "title": "251: IfcWall\nNeighbors:\n321: IfcBuildingStorey\n292: IfcOpeningElement\n293: IfcOpeningElement", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 252, "label": "IfcWall", "shape": "dot", "title": "252: IfcWall\nNeighbors:\n296: IfcOpeningElement\n321: IfcBuildingStorey\n294: IfcOpeningElement\n295: IfcOpeningElement", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 253, "label": "IfcWall", "shape": "dot", "title": "253: IfcWall\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 254, "label": "IfcWall", "shape": "dot", "title": "254: IfcWall\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 255, "label": "IfcWall", "shape": "dot", "title": "255: IfcWall\nNeighbors:\n297: IfcOpeningElement\n322: IfcBuildingStorey\n298: IfcOpeningElement", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 256, "label": "IfcWall", "shape": "dot", "title": "256: IfcWall\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 257, "label": "IfcWall", "shape": "dot", "title": "257: IfcWall\nNeighbors:\n322: IfcBuildingStorey\n299: IfcOpeningElement\n300: IfcOpeningElement\n301: IfcOpeningElement", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 258, "label": "IfcWall", "shape": "dot", "title": "258: IfcWall\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 259, "label": "IfcWall", "shape": "dot", "title": "259: IfcWall\nNeighbors:\n323: IfcBuildingStorey\n302: IfcOpeningElement\n303: IfcOpeningElement", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 260, "label": "IfcWall", "shape": "dot", "title": "260: IfcWall\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 261, "label": "IfcWall", "shape": "dot", "title": "261: IfcWall\nNeighbors:\n304: IfcOpeningElement\n305: IfcOpeningElement\n306: IfcOpeningElement\n323: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 262, "label": "IfcWall", "shape": "dot", "title": "262: IfcWall\nNeighbors:\n321: IfcBuildingStorey\n307: IfcOpeningElement\n308: IfcOpeningElement", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 263, "label": "IfcWall", "shape": "dot", "title": "263: IfcWall\nNeighbors:\n321: IfcBuildingStorey\n309: IfcOpeningElement", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 264, "label": "IfcWall", "shape": "dot", "title": "264: IfcWall\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 265, "label": "IfcWall", "shape": "dot", "title": "265: IfcWall\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 266, "label": "IfcWall", "shape": "dot", "title": "266: IfcWall\nNeighbors:\n321: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 267, "label": "IfcWall", "shape": "dot", "title": "267: IfcWall\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 268, "label": "IfcWall", "shape": "dot", "title": "268: IfcWall\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 269, "label": "IfcWall", "shape": "dot", "title": "269: IfcWall\nNeighbors:\n322: IfcBuildingStorey\n310: IfcOpeningElement", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 270, "label": "IfcWall", "shape": "dot", "title": "270: IfcWall\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 271, "label": "IfcWall", "shape": "dot", "title": "271: IfcWall\nNeighbors:\n322: IfcBuildingStorey\n311: IfcOpeningElement", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 272, "label": "IfcWall", "shape": "dot", "title": "272: IfcWall\nNeighbors:\n322: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 273, "label": "IfcWall", "shape": "dot", "title": "273: IfcWall\nNeighbors:\n312: IfcOpeningElement\n322: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 274, "label": "IfcWall", "shape": "dot", "title": "274: IfcWall\nNeighbors:\n313: IfcOpeningElement\n322: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 275, "label": "IfcWall", "shape": "dot", "title": "275: IfcWall\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 276, "label": "IfcWall", "shape": "dot", "title": "276: IfcWall\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 277, "label": "IfcWall", "shape": "dot", "title": "277: IfcWall\nNeighbors:\n314: IfcOpeningElement\n323: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 278, "label": "IfcWall", "shape": "dot", "title": "278: IfcWall\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 279, "label": "IfcWall", "shape": "dot", "title": "279: IfcWall\nNeighbors:\n315: IfcOpeningElement\n323: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 280, "label": "IfcWall", "shape": "dot", "title": "280: IfcWall\nNeighbors:\n323: IfcBuildingStorey\n316: IfcOpeningElement", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 281, "label": "IfcWall", "shape": "dot", "title": "281: IfcWall\nNeighbors:\n323: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 282, "label": "IfcWall", "shape": "dot", "title": "282: IfcWall\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 283, "label": "IfcWall", "shape": "dot", "title": "283: IfcWall\nNeighbors:\n320: IfcBuildingStorey\n317: IfcOpeningElement\n318: IfcOpeningElement", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 284, "label": "IfcWall", "shape": "dot", "title": "284: IfcWall\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#F8765C", "font": {"color": "black"}, "id": 285, "label": "IfcWall", "shape": "dot", "title": "285: IfcWall\nNeighbors:\n320: IfcBuildingStorey", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 286, "label": "IfcOpeningElement", "shape": "dot", "title": "286: IfcOpeningElement\nNeighbors:\n241: IfcSlab", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 287, "label": "IfcOpeningElement", "shape": "dot", "title": "287: IfcOpeningElement\nNeighbors:\n242: IfcSlab", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 288, "label": "IfcOpeningElement", "shape": "dot", "title": "288: IfcOpeningElement\nNeighbors:\n247: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 289, "label": "IfcOpeningElement", "shape": "dot", "title": "289: IfcOpeningElement\nNeighbors:\n247: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 290, "label": "IfcOpeningElement", "shape": "dot", "title": "290: IfcOpeningElement\nNeighbors:\n249: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 291, "label": "IfcOpeningElement", "shape": "dot", "title": "291: IfcOpeningElement\nNeighbors:\n249: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 292, "label": "IfcOpeningElement", "shape": "dot", "title": "292: IfcOpeningElement\nNeighbors:\n251: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 293, "label": "IfcOpeningElement", "shape": "dot", "title": "293: IfcOpeningElement\nNeighbors:\n251: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 294, "label": "IfcOpeningElement", "shape": "dot", "title": "294: IfcOpeningElement\nNeighbors:\n252: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 295, "label": "IfcOpeningElement", "shape": "dot", "title": "295: IfcOpeningElement\nNeighbors:\n252: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 296, "label": "IfcOpeningElement", "shape": "dot", "title": "296: IfcOpeningElement\nNeighbors:\n252: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 297, "label": "IfcOpeningElement", "shape": "dot", "title": "297: IfcOpeningElement\nNeighbors:\n255: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 298, "label": "IfcOpeningElement", "shape": "dot", "title": "298: IfcOpeningElement\nNeighbors:\n255: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 299, "label": "IfcOpeningElement", "shape": "dot", "title": "299: IfcOpeningElement\nNeighbors:\n257: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 300, "label": "IfcOpeningElement", "shape": "dot", "title": "300: IfcOpeningElement\nNeighbors:\n257: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 301, "label": "IfcOpeningElement", "shape": "dot", "title": "301: IfcOpeningElement\nNeighbors:\n257: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 302, "label": "IfcOpeningElement", "shape": "dot", "title": "302: IfcOpeningElement\nNeighbors:\n259: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 303, "label": "IfcOpeningElement", "shape": "dot", "title": "303: IfcOpeningElement\nNeighbors:\n259: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 304, "label": "IfcOpeningElement", "shape": "dot", "title": "304: IfcOpeningElement\nNeighbors:\n261: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 305, "label": "IfcOpeningElement", "shape": "dot", "title": "305: IfcOpeningElement\nNeighbors:\n261: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 306, "label": "IfcOpeningElement", "shape": "dot", "title": "306: IfcOpeningElement\nNeighbors:\n261: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 307, "label": "IfcOpeningElement", "shape": "dot", "title": "307: IfcOpeningElement\nNeighbors:\n262: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 308, "label": "IfcOpeningElement", "shape": "dot", "title": "308: IfcOpeningElement\nNeighbors:\n262: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 309, "label": "IfcOpeningElement", "shape": "dot", "title": "309: IfcOpeningElement\nNeighbors:\n263: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 310, "label": "IfcOpeningElement", "shape": "dot", "title": "310: IfcOpeningElement\nNeighbors:\n269: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 311, "label": "IfcOpeningElement", "shape": "dot", "title": "311: IfcOpeningElement\nNeighbors:\n271: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 312, "label": "IfcOpeningElement", "shape": "dot", "title": "312: IfcOpeningElement\nNeighbors:\n273: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 313, "label": "IfcOpeningElement", "shape": "dot", "title": "313: IfcOpeningElement\nNeighbors:\n274: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 314, "label": "IfcOpeningElement", "shape": "dot", "title": "314: IfcOpeningElement\nNeighbors:\n277: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 315, "label": "IfcOpeningElement", "shape": "dot", "title": "315: IfcOpeningElement\nNeighbors:\n279: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 316, "label": "IfcOpeningElement", "shape": "dot", "title": "316: IfcOpeningElement\nNeighbors:\n280: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 317, "label": "IfcOpeningElement", "shape": "dot", "title": "317: IfcOpeningElement\nNeighbors:\n283: IfcWall", "value": 10}, {"color": "#35B779", "font": {"color": "black"}, "id": 318, "label": "IfcOpeningElement", "shape": "dot", "title": "318: IfcOpeningElement\nNeighbors:\n283: IfcWall", "value": 10}, {"color": "#888888", "font": {"color": "black"}, "id": 319, "label": "IfcBuilding", "shape": "dot", "title": "319: IfcBuilding\nNeighbors:\n320: IfcBuildingStorey\n321: IfcBuildingStorey\n322: IfcBuildingStorey\n323: IfcBuildingStorey\n324: IfcBuildingStorey\n325: IfcSite", "value": 10}, {"color": "#555555", "font": {"color": "black"}, "id": 320, "label": "IfcBuildingStorey", "shape": "dot", "title": "320: IfcBuildingStorey\nNeighbors:\n128: IfcBuildingElementProxy\n2: IfcBuildingElementProxy\n9: IfcBuildingElementProxy\n138: IfcBuildingElementProxy\n142: IfcBuildingElementProxy\n145: IfcBuildingElementProxy\n18: IfcBuildingElementProxy\n146: IfcBuildingElementProxy\n282: IfcWall\n283: IfcWall\n156: IfcBuildingElementProxy\n284: IfcWall\n285: IfcWall\n159: IfcBuildingElementProxy\n33: IfcBuildingElementProxy\n166: IfcBuildingElementProxy\n168: IfcBuildingElementProxy\n42: IfcBuildingElementProxy\n44: IfcBuildingElementProxy\n47: IfcBuildingElementProxy\n48: IfcBuildingElementProxy\n183: IfcBuildingElementProxy\n186: IfcBuildingElementProxy\n59: IfcBuildingElementProxy\n319: IfcBuilding\n64: IfcBuildingElementProxy\n192: IfcBuildingElementProxy\n194: IfcBuildingElementProxy\n68: IfcBuildingElementProxy\n196: IfcBuildingElementProxy\n201: IfcBuildingElementProxy\n74: IfcBuildingElementProxy\n77: IfcBuildingElementProxy\n79: IfcBuildingElementProxy\n207: IfcBuildingElementProxy\n221: IfcBuildingElementProxy\n231: IfcBuildingElementProxy\n236: IfcBuildingElementProxy\n238: IfcBuildingElementProxy\n239: IfcBuildingElementProxy\n114: IfcBuildingElementProxy\n115: IfcBuildingElementProxy\n245: IfcSlab\n246: IfcWall\n247: IfcWall\n248: IfcWall\n249: IfcWall", "value": 10}, {"color": "#555555", "font": {"color": "black"}, "id": 321, "label": "IfcBuildingStorey", "shape": "dot", "title": "321: IfcBuildingStorey\nNeighbors:\n0: IfcBuildingElementProxy\n1: IfcBuildingElementProxy\n3: IfcBuildingElementProxy\n6: IfcBuildingElementProxy\n10: IfcBuildingElementProxy\n30: IfcBuildingElementProxy\n31: IfcBuildingElementProxy\n34: IfcBuildingElementProxy\n37: IfcBuildingElementProxy\n38: IfcBuildingElementProxy\n39: IfcBuildingElementProxy\n41: IfcBuildingElementProxy\n51: IfcBuildingElementProxy\n52: IfcBuildingElementProxy\n66: IfcBuildingElementProxy\n67: IfcBuildingElementProxy\n69: IfcBuildingElementProxy\n72: IfcBuildingElementProxy\n75: IfcBuildingElementProxy\n76: IfcBuildingElementProxy\n78: IfcBuildingElementProxy\n80: IfcBuildingElementProxy\n85: IfcBuildingElementProxy\n87: IfcBuildingElementProxy\n89: IfcBuildingElementProxy\n94: IfcBuildingElementProxy\n95: IfcBuildingElementProxy\n98: IfcBuildingElementProxy\n100: IfcBuildingElementProxy\n105: IfcBuildingElementProxy\n109: IfcBuildingElementProxy\n110: IfcBuildingElementProxy\n111: IfcBuildingElementProxy\n118: IfcBuildingElementProxy\n121: IfcBuildingElementProxy\n122: IfcBuildingElementProxy\n125: IfcBuildingElementProxy\n127: IfcBuildingElementProxy\n129: IfcBuildingElementProxy\n130: IfcBuildingElementProxy\n131: IfcBuildingElementProxy\n139: IfcBuildingElementProxy\n143: IfcBuildingElementProxy\n147: IfcBuildingElementProxy\n150: IfcBuildingElementProxy\n152: IfcBuildingElementProxy\n153: IfcBuildingElementProxy\n158: IfcBuildingElementProxy\n161: IfcBuildingElementProxy\n162: IfcBuildingElementProxy\n164: IfcBuildingElementProxy\n167: IfcBuildingElementProxy\n170: IfcBuildingElementProxy\n172: IfcBuildingElementProxy\n173: IfcBuildingElementProxy\n179: IfcBuildingElementProxy\n181: IfcBuildingElementProxy\n184: IfcBuildingElementProxy\n185: IfcBuildingElementProxy\n187: IfcBuildingElementProxy\n197: IfcBuildingElementProxy\n198: IfcBuildingElementProxy\n202: IfcBuildingElementProxy\n208: IfcBuildingElementProxy\n209: IfcBuildingElementProxy\n210: IfcBuildingElementProxy\n211: IfcBuildingElementProxy\n212: IfcBuildingElementProxy\n214: IfcBuildingElementProxy\n215: IfcBuildingElementProxy\n216: IfcBuildingElementProxy\n217: IfcBuildingElementProxy\n223: IfcBuildingElementProxy\n224: IfcBuildingElementProxy\n225: IfcBuildingElementProxy\n230: IfcBuildingElementProxy\n232: IfcBuildingElementProxy\n233: IfcBuildingElementProxy\n235: IfcBuildingElementProxy\n237: IfcBuildingElementProxy\n240: IfcBuildingElementProxy\n241: IfcSlab\n250: IfcWall\n251: IfcWall\n252: IfcWall\n253: IfcWall\n262: IfcWall\n263: IfcWall\n264: IfcWall\n265: IfcWall\n266: IfcWall\n319: IfcBuilding", "value": 10}, {"color": "#555555", "font": {"color": "black"}, "id": 322, "label": "IfcBuildingStorey", "shape": "dot", "title": "322: IfcBuildingStorey\nNeighbors:\n256: IfcWall\n257: IfcWall\n133: IfcBuildingElementProxy\n7: IfcBuildingElementProxy\n135: IfcBuildingElementProxy\n136: IfcBuildingElementProxy\n267: IfcWall\n268: IfcWall\n269: IfcWall\n14: IfcBuildingElementProxy\n15: IfcBuildingElementProxy\n144: IfcBuildingElementProxy\n17: IfcBuildingElementProxy\n274: IfcWall\n19: IfcBuildingElementProxy\n20: IfcBuildingElementProxy\n21: IfcBuildingElementProxy\n22: IfcBuildingElementProxy\n151: IfcBuildingElementProxy\n24: IfcBuildingElementProxy\n25: IfcBuildingElementProxy\n26: IfcBuildingElementProxy\n27: IfcBuildingElementProxy\n29: IfcBuildingElementProxy\n157: IfcBuildingElementProxy\n35: IfcBuildingElementProxy\n169: IfcBuildingElementProxy\n43: IfcBuildingElementProxy\n174: IfcBuildingElementProxy\n175: IfcBuildingElementProxy\n176: IfcBuildingElementProxy\n177: IfcBuildingElementProxy\n180: IfcBuildingElementProxy\n53: IfcBuildingElementProxy\n182: IfcBuildingElementProxy\n55: IfcBuildingElementProxy\n56: IfcBuildingElementProxy\n188: IfcBuildingElementProxy\n61: IfcBuildingElementProxy\n189: IfcBuildingElementProxy\n319: IfcBuilding\n65: IfcBuildingElementProxy\n195: IfcBuildingElementProxy\n70: IfcBuildingElementProxy\n203: IfcBuildingElementProxy\n206: IfcBuildingElementProxy\n270: IfcWall\n81: IfcBuildingElementProxy\n271: IfcWall\n213: IfcBuildingElementProxy\n254: IfcWall\n88: IfcBuildingElementProxy\n272: IfcWall\n90: IfcBuildingElementProxy\n220: IfcBuildingElementProxy\n273: IfcWall\n226: IfcBuildingElementProxy\n99: IfcBuildingElementProxy\n227: IfcBuildingElementProxy\n101: IfcBuildingElementProxy\n102: IfcBuildingElementProxy\n103: IfcBuildingElementProxy\n104: IfcBuildingElementProxy\n106: IfcBuildingElementProxy\n107: IfcBuildingElementProxy\n108: IfcBuildingElementProxy\n112: IfcBuildingElementProxy\n242: IfcSlab\n117: IfcBuildingElementProxy\n119: IfcBuildingElementProxy\n124: IfcBuildingElementProxy\n126: IfcBuildingElementProxy\n255: IfcWall", "value": 10}, {"color": "#555555", "font": {"color": "black"}, "id": 323, "label": "IfcBuildingStorey", "shape": "dot", "title": "323: IfcBuildingStorey\nNeighbors:\n258: IfcWall\n259: IfcWall\n132: IfcBuildingElementProxy\n5: IfcBuildingElementProxy\n134: IfcBuildingElementProxy\n260: IfcWall\n8: IfcBuildingElementProxy\n261: IfcWall\n11: IfcBuildingElementProxy\n12: IfcBuildingElementProxy\n13: IfcBuildingElementProxy\n140: IfcBuildingElementProxy\n141: IfcBuildingElementProxy\n16: IfcBuildingElementProxy\n275: IfcWall\n148: IfcBuildingElementProxy\n149: IfcBuildingElementProxy\n278: IfcWall\n23: IfcBuildingElementProxy\n279: IfcWall\n281: IfcWall\n154: IfcBuildingElementProxy\n277: IfcWall\n28: IfcBuildingElementProxy\n276: IfcWall\n280: IfcWall\n32: IfcBuildingElementProxy\n163: IfcBuildingElementProxy\n36: IfcBuildingElementProxy\n40: IfcBuildingElementProxy\n171: IfcBuildingElementProxy\n45: IfcBuildingElementProxy\n49: IfcBuildingElementProxy\n50: IfcBuildingElementProxy\n178: IfcBuildingElementProxy\n54: IfcBuildingElementProxy\n57: IfcBuildingElementProxy\n58: IfcBuildingElementProxy\n60: IfcBuildingElementProxy\n62: IfcBuildingElementProxy\n63: IfcBuildingElementProxy\n190: IfcBuildingElementProxy\n193: IfcBuildingElementProxy\n191: IfcBuildingElementProxy\n319: IfcBuilding\n71: IfcBuildingElementProxy\n200: IfcBuildingElementProxy\n73: IfcBuildingElementProxy\n204: IfcBuildingElementProxy\n205: IfcBuildingElementProxy\n82: IfcBuildingElementProxy\n83: IfcBuildingElementProxy\n84: IfcBuildingElementProxy\n218: IfcBuildingElementProxy\n91: IfcBuildingElementProxy\n92: IfcBuildingElementProxy\n93: IfcBuildingElementProxy\n222: IfcBuildingElementProxy\n219: IfcBuildingElementProxy\n96: IfcBuildingElementProxy\n97: IfcBuildingElementProxy\n228: IfcBuildingElementProxy\n234: IfcBuildingElementProxy\n113: IfcBuildingElementProxy\n243: IfcSlab\n116: IfcBuildingElementProxy\n120: IfcBuildingElementProxy\n123: IfcBuildingElementProxy", "value": 10}, {"color": "#555555", "font": {"color": "black"}, "id": 324, "label": "IfcBuildingStorey", "shape": "dot", "title": "324: IfcBuildingStorey\nNeighbors:\n160: IfcBuildingElementProxy\n4: IfcBuildingElementProxy\n165: IfcBuildingElementProxy\n229: IfcBuildingElementProxy\n199: IfcBuildingElementProxy\n137: IfcBuildingElementProxy\n46: IfcBuildingElementProxy\n244: IfcSlab\n86: IfcBuildingElementProxy\n155: IfcBuildingElementProxy\n319: IfcBuilding", "value": 10}, {"color": "#AAAAAA", "font": {"color": "black"}, "id": 325, "label": "IfcSite", "shape": "dot", "title": "325: IfcSite\nNeighbors:\n326: IfcProject\n319: IfcBuilding", "value": 10}, {"color": "#AAAAAA", "font": {"color": "black"}, "id": 326, "label": "IfcProject", "shape": "dot", "title": "326: IfcProject\nNeighbors:\n325: IfcSite", "value": 10}]);
+                  edges = new vis.DataSet([{"color": "#31688E", "from": 321, "label": "", "to": 51, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 52, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 53, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 1, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 10, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 38, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 49, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 23, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 58, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 55, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 19, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 25, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 0, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 32, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 16, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 56, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 47, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 29, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 57, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 17, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 13, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 21, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 3, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 5, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 12, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 26, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 30, "weight": 3}, {"color": "#31688E", "from": 324, "label": "", "to": 4, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 14, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 20, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 34, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 35, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 42, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 24, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 33, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 39, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 9, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 27, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 31, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 37, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 41, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 18, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 7, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 11, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 22, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 40, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 36, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 43, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 8, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 15, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 28, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 44, "weight": 3}, {"color": "#31688E", "from": 324, "label": "", "to": 46, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 48, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 45, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 6, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 2, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 50, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 54, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 95, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 114, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 66, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 70, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 74, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 77, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 97, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 107, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 119, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 117, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 110, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 103, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 76, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 120, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 79, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 84, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 68, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 91, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 108, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 83, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 113, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 85, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 59, "weight": 3}, {"color": "#31688E", "from": 324, "label": "", "to": 86, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 81, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 82, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 98, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 109, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 115, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 72, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 116, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 104, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 101, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 69, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 111, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 118, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 102, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 89, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 100, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 73, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 112, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 94, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 60, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 87, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 64, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 96, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 67, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 92, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 61, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 75, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 63, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 88, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 80, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 121, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 99, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 78, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 90, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 62, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 65, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 93, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 105, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 71, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 106, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 176, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 154, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 178, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 126, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 130, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 138, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 152, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 151, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 135, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 158, "weight": 3}, {"color": "#31688E", "from": 324, "label": "", "to": 165, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 177, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 180, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 181, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 182, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 183, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 157, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 162, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 174, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 131, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 143, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 129, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 134, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 156, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 169, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 164, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 184, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 185, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 142, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 124, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 128, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 136, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 144, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 153, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 161, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 122, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 167, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 170, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 168, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 173, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 148, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 146, "weight": 3}, {"color": "#31688E", "from": 324, "label": "", "to": 160, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 179, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 166, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 139, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 147, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 125, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 140, "weight": 3}, {"color": "#31688E", "from": 324, "label": "", "to": 155, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 159, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 150, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 163, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 127, "weight": 3}, {"color": "#31688E", "from": 324, "label": "", "to": 137, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 145, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 132, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 133, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 149, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 171, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 172, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 123, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 141, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 175, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 186, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 207, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 210, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 193, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 220, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 225, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 190, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 206, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 231, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 221, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 236, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 238, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 189, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 195, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 222, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 208, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 224, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 197, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 219, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 214, "weight": 3}, {"color": "#31688E", "from": 324, "label": "", "to": 229, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 227, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 223, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 188, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 217, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 218, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 230, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 234, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 200, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 213, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 232, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 202, "weight": 3}, {"color": "#31688E", "from": 324, "label": "", "to": 199, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 239, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 240, "weight": 3}, {"color": "#E64B5D", "from": 242, "label": "", "to": 287, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 242, "weight": 3}, {"color": "#31688E", "from": 324, "label": "", "to": 244, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 194, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 216, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 235, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 245, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 246, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 247, "weight": 3}, {"color": "#E64B5D", "from": 247, "label": "", "to": 289, "weight": 3}, {"color": "#E64B5D", "from": 247, "label": "", "to": 288, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 192, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 198, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 204, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 209, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 215, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 201, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 237, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 226, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 187, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 196, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 205, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 212, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 228, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 233, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 243, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 248, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 191, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 211, "weight": 3}, {"color": "#E64B5D", "from": 241, "label": "", "to": 286, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 241, "weight": 3}, {"color": "#E64B5D", "from": 249, "label": "", "to": 290, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 249, "weight": 3}, {"color": "#E64B5D", "from": 249, "label": "", "to": 291, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 203, "weight": 3}, {"color": "#E64B5D", "from": 255, "label": "", "to": 297, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 255, "weight": 3}, {"color": "#E64B5D", "from": 255, "label": "", "to": 298, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 266, "weight": 3}, {"color": "#E64B5D", "from": 261, "label": "", "to": 304, "weight": 3}, {"color": "#E64B5D", "from": 274, "label": "", "to": 313, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 274, "weight": 3}, {"color": "#E64B5D", "from": 273, "label": "", "to": 312, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 273, "weight": 3}, {"color": "#E64B5D", "from": 261, "label": "", "to": 305, "weight": 3}, {"color": "#E64B5D", "from": 259, "label": "", "to": 302, "weight": 3}, {"color": "#E64B5D", "from": 259, "label": "", "to": 303, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 259, "weight": 3}, {"color": "#E64B5D", "from": 261, "label": "", "to": 306, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 256, "weight": 3}, {"color": "#E64B5D", "from": 271, "label": "", "to": 311, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 271, "weight": 3}, {"color": "#E64B5D", "from": 252, "label": "", "to": 296, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 253, "weight": 3}, {"color": "#E64B5D", "from": 252, "label": "", "to": 295, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 252, "weight": 3}, {"color": "#E64B5D", "from": 252, "label": "", "to": 294, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 258, "weight": 3}, {"color": "#E64B5D", "from": 251, "label": "", "to": 293, "weight": 3}, {"color": "#E64B5D", "from": 263, "label": "", "to": 309, "weight": 3}, {"color": "#E64B5D", "from": 283, "label": "", "to": 317, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 283, "weight": 3}, {"color": "#E64B5D", "from": 283, "label": "", "to": 318, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 265, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 268, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 263, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 264, "weight": 3}, {"color": "#E64B5D", "from": 269, "label": "", "to": 310, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 275, "weight": 3}, {"color": "#E64B5D", "from": 251, "label": "", "to": 292, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 250, "weight": 3}, {"color": "#E64B5D", "from": 262, "label": "", "to": 307, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 282, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 251, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 267, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 278, "weight": 3}, {"color": "#E64B5D", "from": 257, "label": "", "to": 300, "weight": 3}, {"color": "#E64B5D", "from": 262, "label": "", "to": 308, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 281, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 279, "weight": 3}, {"color": "#E64B5D", "from": 279, "label": "", "to": 315, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 254, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 284, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 260, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 277, "weight": 3}, {"color": "#E64B5D", "from": 277, "label": "", "to": 314, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 269, "weight": 3}, {"color": "#31688E", "from": 321, "label": "", "to": 262, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 261, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 276, "weight": 3}, {"color": "#E64B5D", "from": 280, "label": "", "to": 316, "weight": 3}, {"color": "#31688E", "from": 323, "label": "", "to": 280, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 257, "weight": 3}, {"color": "#E64B5D", "from": 257, "label": "", "to": 301, "weight": 3}, {"color": "#E64B5D", "from": 257, "label": "", "to": 299, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 270, "weight": 3}, {"color": "#31688E", "from": 322, "label": "", "to": 272, "weight": 3}, {"color": "#31688E", "from": 320, "label": "", "to": 285, "weight": 3}, {"color": "#FDE725", "from": 319, "label": "", "to": 320, "weight": 3}, {"color": "#FDE725", "from": 325, "label": "", "to": 319, "weight": 3}, {"color": "#FDE725", "from": 326, "label": "", "to": 325, "weight": 3}, {"color": "#FDE725", "from": 319, "label": "", "to": 321, "weight": 3}, {"color": "#FDE725", "from": 319, "label": "", "to": 322, "weight": 3}, {"color": "#FDE725", "from": 319, "label": "", "to": 324, "weight": 3}, {"color": "#FDE725", "from": 319, "label": "", "to": 323, "weight": 3}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": true
+    },
+    "edges": {
+        "color": {
+            "inherit": false
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+                  // if this network requires displaying the configure window,
+                  // put it in its div
+                  options.configure["container"] = document.getElementById("config");
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+                    network.on("selectNode", neighbourhoodHighlight);
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

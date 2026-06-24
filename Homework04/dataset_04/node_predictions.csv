@@ -21,7 +21,7 @@ graph_id,node_id,y_true,y_pred,y_pred_prob,true_name,pred_name
 0,19,7,7,0.9478460550308228,bathroom,bathroom
 0,20,2,2,0.6102617383003235,kitchen,kitchen
 0,21,1,4,0.9936734437942505,livingroom,corridor
-0,22,5,5,0.6914664506912231,stairs,stairs
+0,22,5,5,0.6914663314819336,stairs,stairs
 0,23,6,6,0.9585971832275391,storeroom,storeroom
 0,24,0,0,1.0,bedroom,bedroom
 0,25,8,8,1.0,balcony,balcony
